@@ -1,0 +1,111 @@
+load('datos\imagenes.mat');
+load('datos\mascaras.mat');
+
+snippets = [];
+classes  = [];
+for img=1:70
+    [images, masks] = gen_train_data_from_img(imagenes, mascaras, img, 100);
+    snippets = cat(4, snippets, images);
+    classes = cat(1, classes, masks);
+end
+size(snippets)
+size(classes)
+
+net = trainCNN(snippets, classes)
+
+t_snippets = [];
+t_classes  = [];
+for img=1:70
+    [images, masks] = gen_train_data_from_img(imagenes, mascaras, img, 10);
+    t_snippets = cat(4, t_snippets, images);
+    t_classes = cat(1, t_classes, masks);
+end
+
+t_classes = categorical(t_classes);
+YTest = classify(net, t_snippets);
+
+accuracy = sum(YTest == t_classes)/numel(t_classes)
+
+
+
+
+
+
+
+
+
+
+
+
+function [images, masks] = gen_train_data_from_img(imagenes, mascaras, image_n, n)
+    coords = [];
+    images = [];
+    masks = [];
+    for i=1:n
+        coords = [coords; [randi(181), randi(217)]];
+        masks = [masks; mascaras(coords(i,1), coords(i,2), image_n)];
+        image = gen_block(imagenes(:,:,image_n), coords(i,:));
+        if (size(images,1) == 0)
+            images = image;
+        else
+            images = cat(4,images, image);
+        end
+        %subplot(2,4,i), imagesc(image), xlabel(char(int8(mascaras(coords(i,:)))));
+    end
+end
+
+function [image] = gen_block(image, coord)
+    min_x = max(1, coord(1)-15);
+    max_x = min(181, coord(1)+16);
+    min_y = max(1, coord(2)-15);
+    max_y = min(217, coord(2)+16);
+    
+    % forzamos a que la imagen sea de 32x32
+    x = 31 - max_x + min_x;
+    y = 31 - max_y + min_y;
+    
+    image = image(min_x:max_x, min_y:max_y);
+        
+    % si no es lo suficiente ancha
+    if(x ~= 0)
+        pre_x = zeros(x, size(image,2));
+
+        %ANTES FORZABA A QUE EL CUADRADO ESTUVIERA DENTRO DE LA IMG
+        %if(min_x == 1) % y topa por la izquierda
+        %    max_x = max_x + x; % crece por la derecha
+        %elseif(max_x == 181)
+        %    min_x = min_x - x;
+        %end
+        
+        if(min_x == 1)
+            image = cat(1, pre_x, image);
+        elseif(max_x == 181)
+            image = cat(1, image, pre_x);
+        end
+    end
+    
+    % si no es lo suficiente alta
+    if(y ~= 0)
+        pre_y = zeros(32, y);
+        
+        %ANTES FORZABA A QUE EL CUADRADO ESTUVIERA DENTRO DE LA IMG
+        %if(min_y == 1)
+        %    max_y = max_y + y;
+        %elseif(max_y == 217)
+        %    min_y = min_y - y;
+        %end
+        
+        if(min_y == 1)
+            image = cat(2, pre_y, image);
+        elseif(max_y == 217)
+            image = cat(2, image, pre_y);
+        end
+    end
+            
+    %if(rand() > 0.5)
+    %    image = fliplr(image);
+    %end
+    
+    %ESTA LINEA ESTÁ AHORA ARRIBA
+    %image = image(min_x:max_x, min_y:max_y);
+end

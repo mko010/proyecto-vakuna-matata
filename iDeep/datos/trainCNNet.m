@@ -1,4 +1,4 @@
-function [net,traininfo]=trainCNN(X,T)
+function [net]=trainCNNet(net,X,T)
 
 % X=randn(32,32,1,5000);
 % T=categorical(randn(5000,1)>0.5);
@@ -35,7 +35,8 @@ layers = [imageInputLayer([s1(1) s1(2) 1]);
       
 options = trainingOptions('sgdm','MaxEpochs',5,'InitialLearnRate',0.01,'ExecutionEnvironment','gpu','MiniBatchSize',100);
 %options = trainingOptions('sgdm','MaxEpochs',5,'InitialLearnRate',0.01,'ExecutionEnvironment','gpu');
-rng('default') % For reproducibility      
-[net,traininfo] = trainNetwork(X,categorical(single(T)),layers,options);
+rng('default') % For reproducibility     
+net = train(net,X,categorical(single(T)),'useGPU','yes');
+%[net,traininfo] = trainNetwork(X,categorical(single(T)),layers,options);
 
 
